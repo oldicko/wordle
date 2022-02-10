@@ -56,7 +56,10 @@ def amber_words(position,letter,words):
     return(new_words)
 
 def chance(words):
-    return("Chance: " + str(100/len(words)) + "%")
+    chance = 100/len(words)
+    print("Chance: " + str(chance) + "%")
+    if chance > 5:
+        print(words)
 
 if __name__ == "__main__":
 
@@ -74,7 +77,7 @@ if __name__ == "__main__":
         print(bad_letters, end="")
         bad_letters = bad_letters + str(input())
         words = drop_words(bad_letters,words)
-        print(chance(words))
+        chance(words)
 
 
         print("Enter new green letters and a position like a0s4. Or press enter to skip.")
