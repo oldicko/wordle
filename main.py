@@ -1,3 +1,5 @@
+from playwright.sync_api import sync_playwright, expect
+import re
 def recommend_word(words):
     frequency = {}
     for number in range(0,5):
@@ -23,8 +25,7 @@ def recommend_word(words):
             result[word] = n
 
     recommended_word = sorted(result.items(), key=lambda item: item[1], reverse=True)[0][0]
-    recommended_word = "Play: " + str(recommended_word).upper()
-    return(recommended_word)
+    return(str(recommended_word).upper())
 
 def drop_words(letters,words):
     new_words = []
@@ -61,39 +62,63 @@ def chance(words):
     if chance > 5:
         print(words)
 
+def attempt_wordle(attempt):
+    grey = []
+    amber = []
+    green = []
+    with sync_playwright() as p:
+        browser = p.webkit.launch()
+        page = browser.new_page()
+        page.goto("https://www.nytimes.com/games/wordle/index.html")
+        page.click("#pz-gdpr-btn-accept")
+        page.click("#game")
+        for letter in attempt:
+            page.press('#game', letter)
+        page.press("#game", "Enter")
+        locator = page.locator('[data-key="' + attempt[0] + '"]')
+        expect(locator).to_have_attribute("data-state",re.compile(r"^(?:absent|present|correct)$"))
+
+        for letter in attempt:
+            locator = page.locator('[data-key="' + letter + '"]')
+            if locator.get_attribute("data-state") == "absent":
+                grey.append(letter)
+            elif locator.get_attribute("data-state") == "present":
+                amber.append(letter)
+            elif locator.get_attribute("data-state") == "correct":
+                green.append(letter)
+        browser.close()
+    return(grey,amber,green)
+
+
+
 if __name__ == "__main__":
 
     with open('wordlist.txt') as file:
         words = file.readlines()
         words = [word.rstrip() for word in words]
     
-    print(recommend_word(words))
-    print(chance(words))
+    recommended_word = recommend_word(words)
+    grey,amber,green = attempt_wordle(recommend_word(words).lower())
+    # print(recommended_word)
+    # print(chance(words))
 
-    bad_letters = ""
+    bad_letters = []
 
     for n in range(0,5):
-        print("Enter bad letters:")
-        print(bad_letters, end="")
-        bad_letters = bad_letters + str(input())
+        if len(green) == 5:
+            break
+        bad_letters += grey
         words = drop_words(bad_letters,words)
-        chance(words)
 
+        for m in range(0,4):
+            if recommended_word[m].lower() in green:
+                words = green_words(m,recommended_word[m].lower(),words)
+            elif recommended_word[m].lower() in amber:
+                words = amber_words(m,recommended_word[m].lower(),words)
 
-        print("Enter new green letters and a position like a0s4. Or press enter to skip.")
-        green_input = str(input())
-        if green_input != "":
-            for n in range(int(len(green_input)/2)):
-                words = green_words(green_input[1+ 2*n], green_input[0 + 2*n], words)
-        print(chance(words))
-
-        print("Enter new amber letters and a position like a0s4. Or press enter to skip.")
-        amber_input = str(input())
-        if amber_input != "":
-            for n in range(int(len(amber_input)/2)):
-                words = amber_words(amber_input[1+ 2*n], amber_input[0 + 2*n], words)
-        print(chance(words))
-
-        print(recommend_word(words))
+        recommended_word = recommend_word(words)
+        # print(recommended_word)
+        # print(chance(words))
+        grey,amber,green = attempt_wordle(recommend_word(words).lower())
     
-    print(words)
+    print("Victory in " + str(n + 1) + " turns!")
