@@ -13,8 +13,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install Python dependencies
       run: python -m pip install --upgrade pip playwright
-    - name: Install Playwright dependencies
+    - name: Run first-time Playwright installation
       run: playwright install
+    - name: Complete Playwright dependencies
+      run: playwright install-deps
     - name: Run the WordleBot
       run: python main.py
       env:
