@@ -1,0 +1,19 @@
+on:
+  workflow_dispatch:
+    branches: master
+  push:
+    branches:
+    - none
+  schedule:
+  - cron: '30 6 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Python dependencies
+      run: python -m pip install --upgrade pip playwright re
+    - name: Run the WordleBot
+      run: python main.py
+      env:
+        WORDLE_URL: ${{ secrets.WORDLE_URL }}
